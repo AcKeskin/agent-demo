@@ -1,0 +1,14 @@
+name = "agent-demo"
+main = "src/worker/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://ackeskin.github.io"
+GITHUB_OWNER = "AcKeskin"
+MODEL = "claude-haiku-5-5"
+
+# 5 questions per minute per IP. Each question can make up to 5 model calls.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1002"
+simple = { limit = 5, period = 60 }

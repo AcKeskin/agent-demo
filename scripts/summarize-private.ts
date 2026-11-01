@@ -13,7 +13,12 @@ if (!token) {
 }
 const OUT = "data/private-repos.draft.md";
 
-const repos = await gh<RawRepo[]>("/user/repos?visibility=private&affiliation=owner&per_page=100");
+const repos: RawRepo[] = [];
+for (let page = 1; ; page++) {
+  const batch = await gh<RawRepo[]>(`/user/repos?visibility=private&affiliation=owner&per_page=100&page=${page}`);
+  repos.push(...batch);
+  if (batch.length < 100) break;
+}
 const facts: PrivateRepoFacts[] = [];
 for (const r of repos) {
   const root = await gh<{ name: string }[]>(`/repos/${r.full_name}/contents`).catch(() => []);

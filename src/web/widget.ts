@@ -6,8 +6,8 @@ import type { AskResponse } from "../worker/handler.ts";
 import { EXAMPLE } from "./example.ts";
 import { escapeHtml, renderAnswer, renderSteps } from "./render.ts";
 import { STYLES } from "./styles.ts";
+import { MAX_QUESTION_CHARS as MAX_CHARS } from "../limits.ts";
 
-const MAX_CHARS = 300;
 const TIMEOUT_MS = 45_000;
 const QUESTIONS = [
   "What graphics work has he done?",
@@ -15,6 +15,9 @@ const QUESTIONS = [
   "What does he do at his day job?",
   "Does he write TypeScript?",
 ];
+
+/** An error with a message that is safe and useful to show. */
+class ApiError extends Error {}
 
 function mount(host: HTMLElement): void {
   const endpoint = host.dataset.endpoint?.replace(/\/$/, "");
@@ -61,24 +64,28 @@ function mount(host: HTMLElement): void {
     question = question.trim().slice(0, MAX_CHARS);
     if (!endpoint || !question || button.disabled) return;
     button.disabled = true;
-    input.value = "";
     const els = addEntry(question);
     try {
-      const res = await fetch(`${endpoint}/api/ask`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question }),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-      const body = (await res.json()) as AskResponse & { error?: string };
-      if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-      show(els, body);
+      show(els, await post(question));
+      input.value = "";
     } catch (err) {
       els.answer.classList.remove("wait");
-      els.answer.textContent = err instanceof Error && err.name !== "TypeError" ? err.message : "Could not reach the agent. Try again.";
+      els.answer.textContent = err instanceof ApiError ? err.message : "Could not reach the agent. Try again.";
     } finally {
       button.disabled = false;
     }
+  }
+
+  async function post(question: string): Promise<AskResponse> {
+    const res = await fetch(`${endpoint}/api/ask`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const body = (await res.json().catch(() => null)) as (AskResponse & { error?: string }) | null;
+    if (res.ok && body) return body;
+    throw new ApiError(body?.error ?? "The agent is unavailable right now. Try again later.");
   }
 
   form.addEventListener("submit", (e) => {

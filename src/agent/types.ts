@@ -36,6 +36,8 @@ export interface LlmRequest {
   system: string;
   messages: Message[];
   tools: ToolSpec[];
+  /** "none" keeps tools defined (required once tool blocks are in the history) but forbids calling them. */
+  toolChoice?: "auto" | "none";
 }
 
 export interface LlmResponse {

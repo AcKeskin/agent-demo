@@ -27,7 +27,7 @@ export const REPOS = [
 
 /** Fake GitHub API. Unknown paths return 404. */
 export function fakeGitHub(routes: Record<string, unknown> = {}) {
-  const all: Record<string, unknown> = { "/users/AcKeskin/repos?type=owner&sort=pushed&per_page=100": REPOS, ...routes };
+  const all: Record<string, unknown> = { "/users/AcKeskin/repos?type=owner&sort=pushed&per_page=100&page=1": REPOS, ...routes };
   const calls: string[] = [];
   const fetchFn = (async (url: string | URL | Request) => {
     const path = String(url).replace("https://api.github.com", "");

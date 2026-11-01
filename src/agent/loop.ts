@@ -18,6 +18,7 @@ export interface AgentResult {
 }
 
 const PREVIEW_CHARS = 160;
+const OUT_OF_STEPS = "I ran out of steps before finding an answer. Try a narrower question.";
 
 /**
  * The agent loop: ask the model, run any tools it calls, send the results
@@ -35,15 +36,20 @@ export async function runAgent(question: string, opts: AgentOptions): Promise<Ag
     const res = await llm({
       system: last ? `${system}\n\nYou are out of tool calls. Answer now with what you have.` : system,
       messages,
-      tools: last ? [] : tools.map((t) => t.spec),
+      tools: tools.map((t) => t.spec),
+      toolChoice: last ? "none" : "auto",
     });
 
+    const answer = textOf(res.content);
+    if (res.stop_reason === "max_tokens") {
+      return { answer: answer ? `${answer}...` : OUT_OF_STEPS, steps, truncated: true };
+    }
     const calls = res.content.filter((b): b is ToolUseBlock => b.type === "tool_use");
     if (res.stop_reason !== "tool_use" || calls.length === 0) {
-      return { answer: textOf(res.content), steps, truncated: false };
+      return { answer, steps, truncated: false };
     }
-    // Tools were withheld on the last turn; never run calls made anyway.
-    if (last) break;
+    // Tools are off on the last turn; never run calls made anyway, but keep any text.
+    if (last) return { answer: answer || OUT_OF_STEPS, steps, truncated: true };
 
     messages.push({ role: "assistant", content: res.content });
     const results: ToolResultBlock[] = [];
@@ -55,7 +61,7 @@ export async function runAgent(question: string, opts: AgentOptions): Promise<Ag
     messages.push({ role: "user", content: results });
   }
 
-  return { answer: "I ran out of steps before finding an answer. Try a narrower question.", steps, truncated: true };
+  return { answer: OUT_OF_STEPS, steps, truncated: true };
 }
 
 async function runTool(tool: Tool | undefined, call: ToolUseBlock): Promise<{ content: string; ok: boolean }> {

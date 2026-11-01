@@ -67,12 +67,15 @@ export function createTools(github: GitHub, privateSummary: string): Tool[] {
   ];
 }
 
-/** Drops images, HTML tags and badge lines so the model gets the prose. */
+/** HTML tags common in READMEs. Other angle brackets (like `vector<T>`) are kept. */
+const HTML_TAG = /<\/?(?:a|b|br|center|details|div|em|h[1-6]|hr|i|img|p|picture|source|span|strong|summary|sub|sup|table|tbody|td|th|thead|tr|video)\b[^<>]*>/gi;
+
+/** Drops images, HTML tags and comments so the model gets the prose. */
 export function cleanMarkdown(md: string): string {
   return md
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-    .replace(/<[^>]+>/g, "")
+    .replace(HTML_TAG, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

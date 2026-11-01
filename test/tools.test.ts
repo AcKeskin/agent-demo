@@ -36,6 +36,10 @@ describe("tools", () => {
 });
 
 describe("cleanMarkdown", () => {
+  it("keeps angle brackets that are not HTML", () => {
+    expect(cleanMarkdown("Uses std::vector<Planet> when a < b and c > d")).toBe("Uses std::vector<Planet> when a < b and c > d");
+  });
+
   it("drops images, HTML and comments", () => {
     expect(cleanMarkdown('# T\n<!-- x -->\n![badge](u)\n<p align="center">Hi</p>\n\n\n\nEnd')).toBe("# T\n\nHi\n\nEnd");
   });

@@ -44,8 +44,9 @@ describe("runAgent", () => {
     const llm = scripted(toolCall("echo", { v: "1" }), text("Final."));
     const res = await runAgent("q", { llm, tools: [echo], system: "s", maxTurns: 2 });
     expect(res.answer).toBe("Final.");
-    expect(llm.calls[0]!.tools).toHaveLength(1);
-    expect(llm.calls[1]!.tools).toEqual([]);
+    expect(llm.calls[0]!.toolChoice).toBe("auto");
+    expect(llm.calls[1]!.toolChoice).toBe("none");
+    expect(llm.calls[1]!.tools).toHaveLength(1);
     expect(llm.calls[1]!.system).toContain("out of tool calls");
   });
 
@@ -54,6 +55,21 @@ describe("runAgent", () => {
     const res = await runAgent("q", { llm, tools: [echo], system: "s", maxTurns: 2 });
     expect(res.truncated).toBe(true);
     expect(res.steps).toHaveLength(1);
+  });
+
+  it("keeps text from a last turn that still tries to call tools", async () => {
+    const llm = scripted(toolCall("echo"), {
+      content: [{ type: "text", text: "Partial answer." }, { type: "tool_use", id: "x", name: "echo", input: {} }],
+      stop_reason: "tool_use",
+    });
+    const res = await runAgent("q", { llm, tools: [echo], system: "s", maxTurns: 2 });
+    expect(res).toMatchObject({ answer: "Partial answer.", truncated: true });
+    expect(res.steps).toHaveLength(1);
+  });
+
+  it("marks answers cut by max_tokens as truncated", async () => {
+    const llm = scripted({ content: [{ type: "text", text: "He built" }], stop_reason: "max_tokens" });
+    expect(await runAgent("q", { llm, tools: [], system: "s" })).toEqual({ answer: "He built...", steps: [], truncated: true });
   });
 
   it("cuts long tool output before sending it to the model", async () => {

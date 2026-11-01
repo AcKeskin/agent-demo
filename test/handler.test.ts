@@ -42,6 +42,7 @@ describe("worker handler", () => {
     const sent = JSON.parse(calls[0]!.init.body as string);
     expect(sent.model).toBe("claude-haiku-5-5");
     expect(sent.tools).toHaveLength(5);
+    expect(sent.tool_choice).toEqual({ type: "auto" });
   });
 
   it.each([

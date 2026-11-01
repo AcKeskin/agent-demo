@@ -1,5 +1,6 @@
 const API = "https://api.github.com";
 const REPO_NAME = /^[A-Za-z0-9._-]{1,100}$/;
+const MAX_PAGES = 5;
 
 export interface RepoSummary {
   name: string;
@@ -35,11 +36,22 @@ export class GitHub {
   private readonly cache = new Map<string, { at: number; value: unknown }>();
 
   constructor(opts: GitHubOptions) {
-    this.opts = { cacheTtlMs: 10 * 60_000, now: Date.now, fetch: (...a) => fetch(...a), ...opts };
+    this.opts = {
+      owner: opts.owner,
+      token: opts.token,
+      fetch: opts.fetch ?? ((...a) => fetch(...a)),
+      cacheTtlMs: opts.cacheTtlMs ?? 10 * 60_000,
+      now: opts.now ?? Date.now,
+    };
   }
 
   async listRepos(): Promise<RepoSummary[]> {
-    const raw = await this.get<RawRepo[]>(`/users/${this.opts.owner}/repos?type=owner&sort=pushed&per_page=100`);
+    const raw: RawRepo[] = [];
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const batch = await this.get<RawRepo[]>(`/users/${this.opts.owner}/repos?type=owner&sort=pushed&per_page=100&page=${page}`);
+      raw.push(...batch);
+      if (batch.length < 100) break;
+    }
     return raw
       .filter((r) => !r.fork && !r.private)
       .map((r) => ({
@@ -65,7 +77,7 @@ export class GitHub {
 
   async commits(repo: string, limit: number): Promise<Commit[]> {
     const name = await this.checkRepo(repo);
-    const n = Math.min(Math.max(Math.trunc(limit) || 5, 1), 10);
+    const n = Number.isFinite(limit) ? Math.min(Math.max(Math.trunc(limit), 1), 10) : 5;
     const raw = await this.get<RawCommit[]>(`/repos/${this.opts.owner}/${name}/commits?per_page=${n}`);
     return raw.map((c) => ({ date: c.commit.author?.date ?? "", message: c.commit.message.split("\n")[0] ?? "" }));
   }

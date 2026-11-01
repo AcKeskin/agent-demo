@@ -5,8 +5,8 @@ import type { Llm } from "../agent/types.ts";
 import { GitHub } from "../tools/github.ts";
 import { createTools } from "../tools/index.ts";
 import type { Env } from "./env.ts";
+import { MAX_QUESTION_CHARS } from "../limits.ts";
 
-export const MAX_QUESTION_CHARS = 300;
 const DEFAULT_MODEL = "claude-haiku-5-5";
 const DEFAULT_OWNER = "AcKeskin";
 const MAX_TOKENS = 600;

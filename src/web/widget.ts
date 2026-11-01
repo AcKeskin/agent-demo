@@ -58,6 +58,7 @@ function mount(host: HTMLElement): void {
     note.textContent = "Example of a run. Live answers need the Worker.";
     els.entry.insertBefore(note, els.steps);
     show(els, EXAMPLE.result);
+    log.scrollTop = 0;
   }
 
   async function ask(question: string): Promise<void> {

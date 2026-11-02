@@ -16,6 +16,12 @@ describe("GitHub", () => {
     await expect(gh.readme("../../orgs/x")).rejects.toThrow(/Invalid repo name/);
   });
 
+  it("hides repos left off the allowlist", async () => {
+    const gh = new GitHub({ owner: "AcKeskin", repos: ["Procedural-Planets", " "], fetch: fakeGitHub().fetch });
+    expect((await gh.listRepos()).map((r) => r.name)).toEqual(["procedural-planets"]);
+    await expect(gh.readme("canvas-deck")).rejects.toThrow(/No public repo/);
+  });
+
   it("matches repo names case-insensitively and uses the real name", async () => {
     const api = fakeGitHub({ "/repos/AcKeskin/procedural-planets/readme": "# Planets" });
     const gh = new GitHub({ owner: "AcKeskin", fetch: api.fetch });

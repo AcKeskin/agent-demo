@@ -2,7 +2,7 @@
 
 An AI agent that answers questions about my work by calling tools on my GitHub. Runs on Cloudflare Workers with Claude. Each answer shows the tool calls behind it.
 
-Live on [ackeskin.github.io](https://ackeskin.github.io).
+Built to be embedded on [ackeskin.github.io](https://ackeskin.github.io).
 
 ## How it works
 
@@ -33,7 +33,7 @@ The loop is in `src/agent/loop.ts`: ask the model, run the tools it asks for, se
 | `get_recent_commits` | Last 1 to 10 commit messages |
 | `get_private_work_summary` | Text about my day job and private repos that I reviewed |
 
-All tools are read-only. Every repo argument is checked against my public repo list, so the agent can't be pointed at other accounts or at private repos.
+All tools are read-only. The agent only sees the repos in `ALLOWED_REPOS` (`wrangler.toml`), and every repo argument is checked against that list, so it can't be pointed at other accounts, private repos or repos I left out.
 
 ## Private work without leaking it
 
@@ -51,13 +51,14 @@ The live agent never sees a private repo or a token with private access. Instead
 | --- | --- |
 | API key stays in a Worker secret | `wrangler secret put` |
 | Requests must come from a listed origin | `ALLOWED_ORIGINS` |
-| 5 questions per minute per IP | `[[ratelimits]]` in `wrangler.toml` |
-| At most 5 model calls per question, 600 tokens each | `src/worker/handler.ts` |
+| 5 questions per minute per IP, 20 across all visitors | `[[ratelimits]]` in `wrangler.toml` |
+| At most 5 model calls per question, 600 tokens each, 15 s timeout | `src/worker/handler.ts`, `src/agent/claude.ts` |
+| At most 4 tool calls per turn | `src/agent/loop.ts` |
 | Tool output cut to 4,000 characters | `src/agent/loop.ts` |
 | GitHub responses cached for 10 minutes | `src/tools/github.ts` |
 | Monthly spend limit | Set it in the Claude Console |
 
-The origin check only keeps other websites from using the API, since a script can fake the header. The rate limit and the spend limit are what cap the bill.
+The origin check only keeps other websites from using the API, since a script can fake the header. The rate limits and the spend limit are what cap the bill. Cloudflare counts rate limits per location, so the global limit is approximate; the spend limit is the hard cap.
 
 ## Run it
 
@@ -79,7 +80,7 @@ curl -X POST localhost:8787/api/ask -H 'origin: https://ackeskin.github.io' -H '
 
 ## Deploy
 
-1. `npx wrangler login`, then `npx wrangler secret put ANTHROPIC_API_KEY`. Optional: `npx wrangler secret put GITHUB_TOKEN` (no scopes needed) for a higher GitHub rate limit.
+1. `npx wrangler login`, then `npx wrangler secret put ANTHROPIC_API_KEY` and `npx wrangler secret put GITHUB_TOKEN`. The GitHub token needs no scopes (a fine-grained token with public read only). Without it GitHub allows 60 requests per hour per IP, and Worker IPs are shared, so the agent fails fast.
 2. In the GitHub repo settings add variables `CLOUDFLARE_ACCOUNT_ID` and `WORKER_URL`, and secret `CLOUDFLARE_API_TOKEN` (Workers Scripts edit).
 3. Set Pages source to GitHub Actions.
 

@@ -64,6 +64,23 @@ describe("worker handler", () => {
     expect(res.status).toBe(429);
   });
 
+  it("returns 429 when the global limit is hit", async () => {
+    const keys: string[] = [];
+    const env: Env = { ...ENV, GLOBAL_LIMITER: { limit: async ({ key }) => (keys.push(key), { success: false }) } };
+    const llm = scripted();
+    const res = await createHandler({ privateSummary: "", llm })(ask({ question: "q" }), env);
+    expect(res.status).toBe(429);
+    expect(keys).toEqual(["all"]);
+    expect(llm.calls).toHaveLength(0);
+  });
+
+  it("applies ALLOWED_REPOS to the tools", async () => {
+    const llm = scripted(toolCall("list_repos"), text("ok"));
+    const env: Env = { ...ENV, ALLOWED_REPOS: "canvas-deck" };
+    const res = await createHandler({ privateSummary: "", llm, fetch: fakeGitHub().fetch })(ask({ question: "q" }), env);
+    expect((await res.json()).steps[0].preview).toMatch(/^canvas-deck/);
+  });
+
   it("returns 502 when the model fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const fetchFn = (async () => new Response("overloaded", { status: 529 })) as unknown as typeof fetch;

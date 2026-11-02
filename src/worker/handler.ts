@@ -55,8 +55,17 @@ export function createHandler(deps: HandlerDeps) {
       const { success } = await env.RATE_LIMITER.limit({ key });
       if (!success) return reply({ error: "Too many questions. Try again in a minute." }, 429);
     }
+    if (env.GLOBAL_LIMITER) {
+      const { success } = await env.GLOBAL_LIMITER.limit({ key: "all" });
+      if (!success) return reply({ error: "The demo is busy. Try again in a minute." }, 429);
+    }
 
-    github ??= new GitHub({ owner: env.GITHUB_OWNER ?? DEFAULT_OWNER, token: env.GITHUB_TOKEN, fetch: deps.fetch });
+    github ??= new GitHub({
+      owner: env.GITHUB_OWNER ?? DEFAULT_OWNER,
+      token: env.GITHUB_TOKEN,
+      repos: (env.ALLOWED_REPOS ?? "").split(","),
+      fetch: deps.fetch,
+    });
     const llm =
       deps.llm ??
       claude({ apiKey: env.ANTHROPIC_API_KEY, model: env.MODEL ?? DEFAULT_MODEL, maxTokens: MAX_TOKENS, fetch: deps.fetch });

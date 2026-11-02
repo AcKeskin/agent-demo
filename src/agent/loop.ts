@@ -21,7 +21,7 @@ export interface AgentResult {
 
 const PREVIEW_CHARS = 160;
 const OUT_OF_STEPS = "I ran out of steps before finding an answer. Try a narrower question.";
-const NO_ANSWER = "I couldn't answer that. Try asking about Ali's projects or work.";
+const NO_ANSWER = "I couldn't answer that. Try asking about Ali Can's projects or work.";
 
 /**
  * The agent loop: ask the model, run any tools it calls, send the results

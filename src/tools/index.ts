@@ -1,13 +1,13 @@
 import type { Tool } from "../agent/types.ts";
 import type { GitHub } from "./github.ts";
 
-/** The agent's tools. All read-only, all limited to public data or text Ali approved. */
+/** The agent's tools. All read-only, all limited to public data or text Ali Can approved. */
 export function createTools(github: GitHub, privateSummary: string): Tool[] {
   return [
     {
       spec: {
         name: "list_repos",
-        description: "List Ali's public GitHub repos with language, description, stars and last push date. Call this first to find repo names.",
+        description: "List Ali Can's public GitHub repos with language, description, stars and last push date. Call this first to find repo names.",
         input_schema: { type: "object", properties: {} },
       },
       async run() {
@@ -20,7 +20,7 @@ export function createTools(github: GitHub, privateSummary: string): Tool[] {
     {
       spec: {
         name: "get_readme",
-        description: "Read the README of one of Ali's public repos.",
+        description: "Read the README of one of Ali Can's public repos.",
         input_schema: { type: "object", properties: { repo: { type: "string", description: "Repo name from list_repos" } }, required: ["repo"] },
       },
       run: async ({ repo }) => cleanMarkdown(await github.readme(String(repo))),
@@ -28,7 +28,7 @@ export function createTools(github: GitHub, privateSummary: string): Tool[] {
     {
       spec: {
         name: "get_languages",
-        description: "Languages used in one of Ali's public repos, as percentages of code.",
+        description: "Languages used in one of Ali Can's public repos, as percentages of code.",
         input_schema: { type: "object", properties: { repo: { type: "string" } }, required: ["repo"] },
       },
       async run({ repo }) {
@@ -43,7 +43,7 @@ export function createTools(github: GitHub, privateSummary: string): Tool[] {
     {
       spec: {
         name: "get_recent_commits",
-        description: "The latest commit messages and dates in one of Ali's public repos.",
+        description: "The latest commit messages and dates in one of Ali Can's public repos.",
         input_schema: {
           type: "object",
           properties: { repo: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 10 } },
@@ -59,7 +59,7 @@ export function createTools(github: GitHub, privateSummary: string): Tool[] {
       spec: {
         name: "get_private_work_summary",
         description:
-          "Ali's day job and private projects, as a summary he reviewed. Names and details are left out on purpose; do not guess them.",
+          "Ali Can's day job and private projects, as a summary he reviewed. Names and details are left out on purpose; do not guess them.",
         input_schema: { type: "object", properties: {} },
       },
       run: async () => privateSummary || "No summary available.",

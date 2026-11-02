@@ -5,11 +5,11 @@ url: https://ackeskin.github.io/#experience
 
 ## Role in one sentence
 
-At Hololight (Munich, since June 2022) Ali owns what runs on the headset for Hololight Stream and Hololight Hub. He is turning the Stream client from a separate app per device into a standard OpenXR layer that works on any device.
+At Hololight (Munich, since June 2022) Ali Can owns what runs on the headset for Hololight Stream and Hololight Hub. He is turning the Stream client from a separate app per device into a standard OpenXR layer that works on any device.
 
 ## In plain terms
 
-Hololight Stream renders 3D apps on a PC or server and streams them to headsets, phones and the browser. Ali builds the client side: everything between the decoded video frame and the headset, including input, tracking, networking, rendering and UI. A simple way to put it: OpenXR is like USB for headsets, and his work builds to that standard instead of to each device.
+Hololight Stream renders 3D apps on a PC or server and streams them to headsets, phones and the browser. Ali Can builds the client side: everything between the decoded video frame and the headset, including input, tracking, networking, rendering and UI. A simple way to put it: OpenXR is like USB for headsets, and his work builds to that standard instead of to each device.
 
 ## Devices and platforms
 

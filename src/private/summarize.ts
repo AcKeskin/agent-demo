@@ -57,7 +57,7 @@ function years(f: PrivateRepoFacts): string {
 
 /**
  * Writes the draft summary. Repos are numbered, never named, and listed
- * newest first. The output is a draft: Ali edits and approves it by hand.
+ * newest first. The output is a draft: Ali Can edits and approves it by hand.
  */
 export function renderSummary(repos: PrivateRepoFacts[]): string {
   const sorted = [...repos].sort((a, b) => b.pushedAt.localeCompare(a.pushedAt));
@@ -74,7 +74,7 @@ export function renderSummary(repos: PrivateRepoFacts[]): string {
     "",
     "## Private projects",
     "",
-    `Ali also has ${repos.length} private repos. Names and details are not shared. What they show:`,
+    `Ali Can also has ${repos.length} private repos. Names and details are not shared. What they show:`,
     "",
     ...lines,
     "",

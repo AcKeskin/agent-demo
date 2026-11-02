@@ -28,7 +28,7 @@ describe("private summary", () => {
 
   it("numbers repos newest first and never prints names or file names", () => {
     const md = renderSummary([repo(), repo({ pushedAt: "2026-01-01T00:00:00Z", createdAt: "2026-01-01T00:00:00Z", languages: { Go: 1 }, rootEntries: ["go.mod"] })]);
-    expect(md).toContain("Ali also has 2 private repos.");
+    expect(md).toContain("Ali Can also has 2 private repos.");
     expect(md).toContain("- Private project 1 (2026): Go; uses Go modules.");
     expect(md).toContain("- Private project 2 (2024 to 2025): C#, ShaderLab; uses GitHub Actions, Unity.");
     expect(md).not.toMatch(/secret-client|Assets|acme/i);

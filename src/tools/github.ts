@@ -21,18 +21,22 @@ export interface GitHubOptions {
   owner: string;
   /** Optional. Raises the rate limit; needs no scopes, since only public data is read. */
   token?: string;
+  /** Repos the agent may see. Empty means every public, non-fork repo. */
+  repos?: string[];
   fetch?: typeof fetch;
   cacheTtlMs?: number;
   now?: () => number;
 }
 
 /**
- * Read-only client for one owner's public, non-fork repos.
- * Every repo argument is checked against that list, so the agent cannot be
- * pointed at other accounts or at private repos.
+ * Read-only client for one owner's public, non-fork repos, optionally
+ * narrowed to an allowlist. Every repo argument is checked against that list,
+ * so the agent cannot be pointed at other accounts, private repos or repos
+ * left off the list.
  */
 export class GitHub {
-  private readonly opts: Required<Omit<GitHubOptions, "token">> & { token?: string };
+  private readonly opts: Required<Omit<GitHubOptions, "token" | "repos">> & { token?: string };
+  private readonly allowed: Set<string>;
   private readonly cache = new Map<string, { at: number; value: unknown }>();
 
   constructor(opts: GitHubOptions) {
@@ -43,6 +47,7 @@ export class GitHub {
       cacheTtlMs: opts.cacheTtlMs ?? 10 * 60_000,
       now: opts.now ?? Date.now,
     };
+    this.allowed = new Set((opts.repos ?? []).map((r) => r.trim().toLowerCase()).filter(Boolean));
   }
 
   async listRepos(): Promise<RepoSummary[]> {
@@ -54,6 +59,7 @@ export class GitHub {
     }
     return raw
       .filter((r) => !r.fork && !r.private)
+      .filter((r) => this.allowed.size === 0 || this.allowed.has(r.name.toLowerCase()))
       .map((r) => ({
         name: r.name,
         description: r.description ?? "",

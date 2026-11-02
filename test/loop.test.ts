@@ -80,4 +80,22 @@ describe("runAgent", () => {
     expect(sent[0]!.content).toHaveLength(10);
     expect(res.steps[0]!.preview).toHaveLength(50);
   });
+
+  it("runs at most maxToolCalls per turn and answers the rest with errors", async () => {
+    const many = {
+      content: ["a", "b", "c"].map((id) => ({ type: "tool_use" as const, id, name: "echo", input: { v: id } })),
+      stop_reason: "tool_use",
+    };
+    const llm = scripted(many, text("ok"));
+    const res = await runAgent("q", { llm, tools: [echo], system: "s", maxToolCalls: 2 });
+    expect(res.steps.map((s) => s.ok)).toEqual([true, true, false]);
+    const sent = llm.calls[1]!.messages.at(-1)!.content as { tool_use_id: string; content: string }[];
+    expect(sent.map((r) => r.tool_use_id)).toEqual(["a", "b", "c"]);
+    expect(sent[2]!.content).toMatch(/Skipped/);
+  });
+
+  it("never returns an empty answer", async () => {
+    const llm = scripted({ content: [], stop_reason: "end_turn" });
+    expect((await runAgent("q", { llm, tools: [], system: "s" })).answer).toMatch(/couldn't answer/);
+  });
 });

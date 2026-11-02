@@ -6,6 +6,8 @@ import type { AskResponse } from "../worker/handler.ts";
 import { EXAMPLE } from "./example.ts";
 import { escapeHtml, renderAnswer, renderSteps } from "./render.ts";
 import { STYLES } from "./styles.ts";
+import { reducedMotion, sleep, typeOut } from "./typewriter.ts";
+import { startCam } from "./cam.ts";
 import { MAX_QUESTION_CHARS as MAX_CHARS } from "../limits.ts";
 
 const TIMEOUT_MS = 45_000;
@@ -24,13 +26,15 @@ function mount(host: HTMLElement): void {
   const root = host.attachShadow({ mode: "open" });
   root.innerHTML = `<style>${STYLES}</style>
     <div class="box">
-      <div class="top"><span class="hud"><span class="dot"></span>Agent · tools on GitHub</span><span class="hud">${endpoint ? "Live" : "Example only"}</span></div>
+      <span class="cam" aria-hidden="true"></span>
+      <div class="top"><span class="mx-t"><i class="mx-d"></i>Program: agent-demo</span><span class="mx-s"><b>Status:</b><span class="${endpoint ? "on" : ""}">${endpoint ? "Active" : "Example only"}</span></span></div>
       <div class="log" aria-live="polite"></div>
       <div class="chips">${QUESTIONS.map((q) => `<button type="button">${escapeHtml(q)}</button>`).join("")}</div>
-      <form><input id="agent-q" name="q" maxlength="${MAX_CHARS}" placeholder="Ask about his projects or work" autocomplete="off" aria-label="Question"><button>Ask</button></form>
+      <form><input id="agent-q" name="q" maxlength="${MAX_CHARS}" placeholder="Ask about his projects or work" autocomplete="off" aria-label="Question"><button>Run</button></form>
     </div>`;
 
   const log = root.querySelector<HTMLElement>(".log")!;
+  startCam(root.querySelector<HTMLElement>(".cam")!, host.dataset.cam ?? "AGENT_08");
   const form = root.querySelector("form")!;
   const input = form.querySelector("input")!;
   const button = form.querySelector("button")!;
@@ -38,16 +42,27 @@ function mount(host: HTMLElement): void {
   function addEntry(question: string): { steps: HTMLOListElement; answer: HTMLElement; entry: HTMLElement } {
     const entry = document.createElement("div");
     entry.className = "entry";
-    entry.innerHTML = `<p class="q">&gt; ${escapeHtml(question)}</p><ol></ol><p class="a wait">Thinking...</p>`;
+    entry.innerHTML = `<p class="q">${escapeHtml(question)}</p><ol></ol><p class="a wait">Evaluating options</p>`;
     log.append(entry);
     log.scrollTop = log.scrollHeight;
     return { entry, steps: entry.querySelector("ol")!, answer: entry.querySelector(".a")! };
   }
 
-  function show(els: ReturnType<typeof addEntry>, res: AskResponse): void {
+  /** Reveals the tool calls one by one, then types out the answer. */
+  async function show(els: ReturnType<typeof addEntry>, res: AskResponse, animate = true): Promise<void> {
     els.steps.innerHTML = renderSteps(res.steps);
+    const items = [...els.steps.children] as HTMLElement[];
+    if (animate && !reducedMotion()) {
+      items.forEach((li) => (li.hidden = true));
+      for (const li of items) {
+        await sleep(220);
+        li.hidden = false;
+        log.scrollTop = log.scrollHeight;
+      }
+    }
     els.answer.classList.remove("wait");
-    els.answer.innerHTML = renderAnswer(res.answer);
+    if (animate) await typeOut(els.answer, res.answer, renderAnswer(res.answer));
+    else els.answer.innerHTML = renderAnswer(res.answer);
     log.scrollTop = log.scrollHeight;
   }
 
@@ -57,7 +72,7 @@ function mount(host: HTMLElement): void {
     note.className = "note";
     note.textContent = "Example of a run. Live answers need the Worker.";
     els.entry.insertBefore(note, els.steps);
-    show(els, EXAMPLE.result);
+    void show(els, EXAMPLE.result, false);
     log.scrollTop = 0;
   }
 
@@ -67,7 +82,7 @@ function mount(host: HTMLElement): void {
     button.disabled = true;
     const els = addEntry(question);
     try {
-      show(els, await post(question));
+      await show(els, await post(question));
       input.value = "";
     } catch (err) {
       els.answer.classList.remove("wait");
